@@ -5,6 +5,54 @@ import localforage from 'localforage'
 import { STORAGE_KEY_MAP } from 'src/constants'
 import { ActionType } from 'src/types'
 import type { ISettings } from 'src/types'
+import navConfig from '../../nav.config.json'
+
+const LAN_HOST_PATTERNS = [
+  /^10\./,
+  /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
+  /^192\.168\./,
+  /^169\.254\./,
+  /^127\./,
+]
+
+const LAN_HOSTNAMES = new Set(['localhost', '::1'])
+
+function isLanHostname(host?: string | null): boolean {
+  if (!host) {
+    return false
+  }
+
+  const value = host.toLowerCase()
+  if (LAN_HOSTNAMES.has(value)) {
+    return true
+  }
+
+  return LAN_HOST_PATTERNS.some((pattern) => pattern.test(value))
+}
+
+function getHostname(url?: string): string {
+  if (!url) {
+    return ''
+  }
+
+  try {
+    return new URL(url).hostname
+  } catch {
+    return ''
+  }
+}
+
+const locationHost = (() => {
+  try {
+    return globalThis.location?.hostname || ''
+  } catch {
+    return ''
+  }
+})()
+
+const lanFromConfig = isLanHostname(getHostname(navConfig.address))
+const lanFromLocation = isLanHostname(locationHost)
+const shouldBypassLogin = lanFromLocation && (!navConfig.address || lanFromConfig)
 
 export function getToken() {
   return globalThis.localStorage?.getItem(STORAGE_KEY_MAP.TOKEN) || ''
@@ -65,7 +113,7 @@ export function userLogout() {
   })
 }
 
-export const isLogin: boolean = !!getToken()
+export const isLogin: boolean = shouldBypassLogin || !!getToken()
 
 let create: null | boolean = null
 let edit: null | boolean = null
