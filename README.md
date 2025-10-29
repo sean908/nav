@@ -5,7 +5,7 @@
   <br />
   <b>发现导航</b>
   <p align="center">一个纯静态、支持SEO、在线编辑的强大导航网站，希望您会喜欢</p>
-  <p align="center">内置收录多达 800+ 优质网站， 助您工作、学习和生活</p>
+  <p align="center">默认内置少量常用网站示例（如 GitHub、Stack Overflow），方便部署时参考</p>
   <p align="center">
     <a href="README_EN.md"><img alt="english" src="https://img.shields.io/static/v1.svg?label=&message=English&style=flat-square&color=ff5000"></a>
     <img src="https://img.shields.io/github/v/release/xjh22222228/nav" />
@@ -44,7 +44,7 @@
 
 ## 特性
 
-- 🍰 内置 `800+` 优质网站
+- 🍰 默认内置常用站点示例（GitHub、Stack Overflow 等）
 - 🍰 支持 [码云 Gitee](https://gitee.com/xiejiahe/nav)
 - 🍰 支持 [GitLab](https://gitlab.com/xjh22222228/nav)
 - 🍰 支持从浏览器书签导入
