@@ -14,7 +14,7 @@ import { CommonModule } from '@angular/common'
 import { FormsModule, ReactiveFormsModule } from '@angular/forms'
 import { getTextContent, getClassById } from 'src/utils'
 import { getTempId, isSelfDevelop } from 'src/utils/utils'
-import { updateByWeb, pushDataByAny } from 'src/utils/web'
+import { updateByWeb, pushDataByAny, ensureWebsitePath } from 'src/utils/web'
 import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms'
 import type { IWebProps, IWebTag } from 'src/types'
 import { TopType, ActionType } from 'src/types'
@@ -184,15 +184,19 @@ export class CreateWebComponent {
 
     const detail = props?.detail
     if (!detail) {
-      ctx.parentId = props?.parentId || ctx.parentId
-      if (navs().length === 0) return
-      if (ctx.parentId === -1) {
-        const parentId = navs()[0]?.nav?.[0]?.nav?.[0]?.id
-        if (!parentId) {
-          return
-        }
-        ctx.parentId = parentId
+      const path = ensureWebsitePath({
+        threeId: props?.parentId,
+      })
+
+      if (!path) {
+        this.message.error($t('_sel1'))
+        return
       }
+
+      ctx.parentId =
+        props?.parentId && props.parentId !== -1
+          ? props.parentId
+          : path.threeId
     }
     ctx.detail = detail
     ctx.showModal = true
@@ -505,3 +509,4 @@ export class CreateWebComponent {
     this.onClose()
   }
 }
+

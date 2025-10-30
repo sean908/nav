@@ -11,7 +11,7 @@ import { isLogin, removeWebsite } from 'src/utils/user'
 import { NzMessageService } from 'ng-zorro-antd/message'
 import { NzModalService } from 'ng-zorro-antd/modal'
 import { NzNotificationService } from 'ng-zorro-antd/notification'
-import { setNavs } from 'src/utils/web'
+import { setNavs, ensureWebsitePath } from 'src/utils/web'
 import { updateFileContent } from 'src/api'
 import {
   DB_PATH,
@@ -380,11 +380,22 @@ export default class WebpComponent {
   }
 
   openCreateWebModal(): any {
-    if (this.tabActive === 3 && this.threeSelect === -1) {
-      return this.message.error($t('_sel3'))
+    const path = ensureWebsitePath({
+      oneId: this.oneSelect,
+      twoId: this.twoSelect,
+      threeId: this.threeSelect,
+    })
+
+    if (!path) {
+      return this.message.error($t('_sel1'))
     }
+
+    this.oneSelect = path.oneId
+    this.twoSelect = path.twoId
+    this.threeSelect = path.threeId
+
     event.emit('CREATE_WEB', {
-      parentId: this.threeSelect,
+      parentId: path.threeId,
     })
   }
 
@@ -638,3 +649,4 @@ export default class WebpComponent {
     })
   }
 }
+

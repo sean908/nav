@@ -6,10 +6,10 @@ import localforage from 'localforage'
 import navConfig from '../../nav.config.json'
 import { updateFileContent } from 'src/api'
 import { isLogin } from './user'
-import { IWebProps, INavProps } from '../types'
+import { IWebProps, INavProps, INavTwoProp, INavThreeProp } from '../types'
 import { navs } from 'src/store'
 import { STORAGE_KEY_MAP, DB_PATH } from 'src/constants'
-import { isSelfDevelop } from './utils'
+import { getTempId, isSelfDevelop } from './utils'
 import { queryString, getClassById } from './index'
 import { $t } from 'src/locale'
 import { filterLoginData, dfsNavs } from './pureUtils'
@@ -198,4 +198,145 @@ export function pushDataByAny(parentId: number, data: any): boolean {
     event.emit('WEB_REFRESH')
   }
   return ok
+}
+
+
+function createDefaultClass(
+  parentId: number,
+  title = $t('_uncategorized'),
+): number | null {
+  const payload = {
+    id: getTempId(),
+    title,
+    icon: '',
+    ownVisible: false,
+    collapsed: false,
+    nav: [],
+  }
+
+  const ok = pushDataByAny(parentId, payload)
+  if (!ok) {
+    return null
+  }
+  return payload.id
+}
+
+type EnsurePathProps = {
+  oneId?: number
+  twoId?: number
+  threeId?: number
+}
+
+export function ensureWebsitePath(props: EnsurePathProps = {}) {
+  if (!navs().length) {
+    return null
+  }
+
+  const normalized: EnsurePathProps = { ...props }
+
+  const getOne = (id: number) => navs().find((item) => item.id === id)
+  const getTwo = (oneId: number, twoId: number): INavTwoProp | undefined =>
+    getOne(oneId)?.nav?.find((item) => item.id === twoId)
+  const getThree = (
+    oneId: number,
+    twoId: number,
+    threeId: number,
+  ): INavThreeProp | undefined =>
+    getTwo(oneId, twoId)?.nav?.find((item) => item.id === threeId)
+
+  if (normalized.threeId != null && normalized.threeId !== -1) {
+    const { oneIndex, twoIndex, threeIndex } = getClassById(normalized.threeId, -1)
+    if (oneIndex !== -1 && twoIndex !== -1 && threeIndex !== -1) {
+      const data = navs()
+      return {
+        oneId: data[oneIndex].id,
+        twoId: data[oneIndex].nav[twoIndex].id,
+        threeId: data[oneIndex].nav[twoIndex].nav[threeIndex].id,
+      }
+    }
+    normalized.threeId = undefined
+  }
+
+  if (normalized.twoId != null && normalized.twoId !== -1) {
+    const { oneIndex, twoIndex } = getClassById(normalized.twoId, -1)
+    if (oneIndex !== -1 && twoIndex !== -1) {
+      const data = navs()
+      normalized.oneId = data[oneIndex].id
+      normalized.twoId = data[oneIndex].nav[twoIndex].id
+    } else {
+      normalized.twoId = undefined
+    }
+  }
+
+  if (normalized.oneId != null && normalized.oneId !== -1) {
+    const { oneIndex } = getClassById(normalized.oneId, -1)
+    if (oneIndex === -1) {
+      normalized.oneId = undefined
+    } else {
+      normalized.oneId = navs()[oneIndex].id
+    }
+  }
+
+  let one =
+    normalized.oneId != null && normalized.oneId !== -1
+      ? getOne(normalized.oneId)
+      : undefined
+
+  if (!one) {
+    one = navs()[0]
+    if (!one) {
+      return null
+    }
+    normalized.oneId = one.id
+  }
+
+  let two =
+    normalized.twoId != null && normalized.twoId !== -1
+      ? getTwo(normalized.oneId!, normalized.twoId)
+      : undefined
+
+  if (!two) {
+    const list = getOne(normalized.oneId!)?.nav || []
+    if (!list.length) {
+      const createdId = createDefaultClass(normalized.oneId!)
+      if (createdId == null) {
+        return null
+      }
+      two = getTwo(normalized.oneId!, createdId)
+    } else {
+      two = list[0]
+    }
+    if (!two) {
+      return null
+    }
+    normalized.twoId = two.id
+  }
+
+  let three =
+    normalized.threeId != null && normalized.threeId !== -1
+      ? getThree(normalized.oneId!, normalized.twoId!, normalized.threeId)
+      : undefined
+
+  if (!three) {
+    const list = getTwo(normalized.oneId!, normalized.twoId!)?.nav || []
+    if (!list.length) {
+      const createdId = createDefaultClass(normalized.twoId!)
+      if (createdId == null) {
+        return null
+      }
+      three = getThree(normalized.oneId!, normalized.twoId!, createdId)
+    } else {
+      three = list[0]
+    }
+    if (!three) {
+      return null
+    }
+    normalized.threeId = three.id
+  }
+
+  return {
+    oneId: normalized.oneId!,
+    twoId: normalized.twoId!,
+    threeId: normalized.threeId!,
+  }
 }
